@@ -1,0 +1,35 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  annotations:
+    configmap.reloader.stakater.com/reload: "config"
+  labels:
+    app: crypto-monitor-dep
+  name: crypto-monitor-dep
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: crypto-monitor
+  template:
+    metadata:
+      labels:
+        app: crypto-monitor
+    spec:
+      volumes:
+      - name: monitor-pv-storage
+        persistentVolumeClaim:
+          claimName: pv-claim
+      containers:
+      - image: eu.gcr.io/enduring-range-302623/crypto-alerts:v0.6.4
+        name: crypto-monitor
+        envFrom:
+        - configMapRef:
+            name: config
+        resources:
+          requests:
+            cpu: "50m"
+            memory: "100Mi"
+        volumeMounts:
+        - mountPath: "/data/db"
+          name: monitor-pv-storage

@@ -1,0 +1,4 @@
+kubernetes/*
+venv/*
+.idea/*
+__pycache__/*
