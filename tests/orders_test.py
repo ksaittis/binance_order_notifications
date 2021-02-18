@@ -41,10 +41,10 @@ class TestOrders(unittest.TestCase):
         new_orders: List[Order] = [Order(symbol="BTCGBP", orderId=1)]
 
         # When
-        missing_order = OrderManager.get_missing_orders(original_orders, new_orders)
+        orders_removed = OrderManager.get_missing_orders(original_orders, new_orders)
 
         # Then
-        self.assertTrue(missing_order[0] == expected_missing_order)
+        self.assertTrue(orders_removed[0] == expected_missing_order)
 
     def test_identify_new_orders(self):
         # Given
@@ -54,10 +54,10 @@ class TestOrders(unittest.TestCase):
                                    expected_new_order]
 
         # When
-        new_order = OrderManager.get_new_orders(original_orders, new_orders)
+        actual_orders_added = OrderManager.get_new_orders(original_orders, new_orders)
 
         # Then
-        self.assertTrue(new_order[0] == expected_new_order)
+        self.assertTrue(actual_orders_added[0] == expected_new_order)
 
     def test_identify_single_missing_order_multiple_new(self):
         # Given
@@ -69,10 +69,10 @@ class TestOrders(unittest.TestCase):
                                    Order(symbol="ADAGBP", orderId=1)]
 
         # When
-        missing_order = OrderManager.get_missing_orders(original_orders, new_orders)
+        actual_orders_removed = OrderManager.get_missing_orders(original_orders, new_orders)
 
         # Then
-        self.assertTrue(missing_order[0] == expected_missing_order)
+        self.assertTrue(actual_orders_removed[0] == expected_missing_order)
 
     def test_identify_multiple_new_orders(self):
         # Given
@@ -83,12 +83,12 @@ class TestOrders(unittest.TestCase):
                                    expected_new_order, expected_new_order2]
 
         # When
-        new_order = OrderManager.get_new_orders(original_orders, new_orders)
+        actual_orders_added = OrderManager.get_new_orders(original_orders, new_orders)
 
         # Then
-        self.assertTrue(new_order == [expected_new_order2, expected_new_order])
+        self.assertTrue(sorted(actual_orders_added) == sorted([expected_new_order2, expected_new_order]))
 
-    def test_identify_missing_and_new_orders(self):
+    def identify_missing_and_new_orders(self):
         # Given
         expected_missing_orders = [Order(symbol="BTCGBP", orderId=1), Order(symbol="1INCHUSDT", orderId=2)]
         expected_new_orders = [Order(symbol="VETGBP", orderId=3), Order(symbol="ADABTC", orderId=4)]
@@ -103,8 +103,8 @@ class TestOrders(unittest.TestCase):
         actual_missing_orders, actual_new_orders = OrderManager.identify_order_changes(original_orders, new_orders)
 
         # Then
-        self.assertTrue(actual_missing_orders == expected_missing_orders)
-        self.assertTrue(actual_new_orders == expected_new_orders)
+        self.assertTrue(sorted(actual_missing_orders) == sorted(expected_missing_orders))
+        self.assertTrue(sorted(actual_new_orders) == sorted(expected_new_orders))
 
 
 if __name__ == '__main__':

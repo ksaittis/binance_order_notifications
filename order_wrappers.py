@@ -18,6 +18,9 @@ class Order:
     def __hash__(self):
         return hash(str(self))
 
+    def __lt__(self, other):
+        return self.orderId < other.orderId
+
     def __eq__(self, other):
         if not isinstance(other, Order):
             # don't attempt to compare against unrelated types
@@ -38,10 +41,10 @@ class OrderManager:
     @staticmethod
     def identify_order_changes(original_orders: List[Order],
                                new_orders: List[Order]) -> Tuple[List[Order], List[Order]]:
-        new_orders = OrderManager.get_new_orders(original_orders, new_orders)
-        missing_orders = OrderManager.get_missing_orders(original_orders, new_orders)
+        orders_added = OrderManager.get_new_orders(original_orders, new_orders)
+        orders_removed = OrderManager.get_missing_orders(original_orders, new_orders)
 
-        return missing_orders, new_orders
+        return orders_removed, orders_added
 
 
 class DetailedOrder:
