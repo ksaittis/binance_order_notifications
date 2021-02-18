@@ -1,6 +1,9 @@
+import os
 from dataclasses import dataclass
 from enum import Enum
 from typing import Optional, List, Tuple
+
+from binance.client import Client
 
 
 class OrderStatus(Enum):
@@ -32,7 +35,7 @@ class Order:
         return self.symbol == other.symbol and self.orderId == other.orderId
 
 
-class OrderManager:
+class OrderEvaluator:
     @staticmethod
     def get_missing_orders(original_orders: List[Order], new_orders: List[Order]) -> List[Order]:
         return list(set(original_orders) - set(new_orders))
@@ -44,8 +47,8 @@ class OrderManager:
     @staticmethod
     def identify_order_changes(original_orders: List[Order],
                                new_orders: List[Order]) -> Tuple[List[Order], List[Order]]:
-        orders_added = OrderManager.get_new_orders(original_orders, new_orders)
-        orders_removed = OrderManager.get_missing_orders(original_orders, new_orders)
+        orders_added = OrderEvaluator.get_new_orders(original_orders, new_orders)
+        orders_removed = OrderEvaluator.get_missing_orders(original_orders, new_orders)
 
         return orders_removed, orders_added
 
@@ -87,3 +90,29 @@ class DetailedOrder:
     @property
     def is_new(self) -> bool:
         return self.get_status() == OrderStatus.NEW.value
+
+
+class OrderManager:
+    def __init__(self):
+        self.client = Client(
+            api_key=os.getenv('API_KEY', 'J7ZuTaZxOhbpMQueXPvS4Q2bO5IKHxlXKsmtAq3wZ63VnGF8kKZGzgt3QlQHhMtI'),
+            api_secret=os.getenv('SECRET_KEY', 'lGlIjkbCCEua91jNoN4UQvE8i5WSG5ZoV8h0KCzTHulq9vekE5uq9wFI4XrVD4ee')
+        )
+
+    def get_detailed_open_orders(self) -> List[DetailedOrder]:
+        return [DetailedOrder(**order) for order in (self.client.get_open_orders())]
+
+    def get_open_orders_symbols(self) -> List[str]:
+        return [order.get_symbol() for order in (self.get_detailed_open_orders())]
+
+    def get_open_orders(self) -> List[Order]:
+        return [order.get_order() for order in (self.get_detailed_open_orders())]
+
+    def get_filled_order(self, symbol: str) -> List[DetailedOrder]:
+        return [DetailedOrder(**order) for order in (self.client.get_all_orders(symbol=symbol))]
+
+    def is_order_filled(self, order: Order) -> bool:
+        return self.get_order(order).is_cancelled
+
+    def get_order(self, order: Order):
+        return self.client.get_all_orders(symbol=order.symbol, orderId=order.orderId)

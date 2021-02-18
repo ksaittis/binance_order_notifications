@@ -1,7 +1,7 @@
 import unittest
 from typing import List
 
-from order_wrappers import Order, OrderManager
+from order_wrappers import Order, OrderEvaluator
 
 
 class TestOrders(unittest.TestCase):
@@ -41,7 +41,7 @@ class TestOrders(unittest.TestCase):
         new_orders: List[Order] = [Order(symbol="BTCGBP", orderId=1)]
 
         # When
-        orders_removed = OrderManager.get_missing_orders(original_orders, new_orders)
+        orders_removed = OrderEvaluator.get_missing_orders(original_orders, new_orders)
 
         # Then
         self.assertTrue(orders_removed[0] == expected_missing_order)
@@ -54,7 +54,7 @@ class TestOrders(unittest.TestCase):
                                    expected_new_order]
 
         # When
-        actual_orders_added = OrderManager.get_new_orders(original_orders, new_orders)
+        actual_orders_added = OrderEvaluator.get_new_orders(original_orders, new_orders)
 
         # Then
         self.assertTrue(actual_orders_added[0] == expected_new_order)
@@ -69,7 +69,7 @@ class TestOrders(unittest.TestCase):
                                    Order(symbol="ADAGBP", orderId=1)]
 
         # When
-        actual_orders_removed = OrderManager.get_missing_orders(original_orders, new_orders)
+        actual_orders_removed = OrderEvaluator.get_missing_orders(original_orders, new_orders)
 
         # Then
         self.assertTrue(actual_orders_removed[0] == expected_missing_order)
@@ -83,7 +83,7 @@ class TestOrders(unittest.TestCase):
                                    expected_new_order, expected_new_order2]
 
         # When
-        actual_orders_added = OrderManager.get_new_orders(original_orders, new_orders)
+        actual_orders_added = OrderEvaluator.get_new_orders(original_orders, new_orders)
 
         # Then
         self.assertTrue(sorted(actual_orders_added) == sorted([expected_new_order2, expected_new_order]))
@@ -100,7 +100,7 @@ class TestOrders(unittest.TestCase):
         new_orders.extend(expected_new_orders)
 
         # When
-        actual_missing_orders, actual_new_orders = OrderManager.identify_order_changes(original_orders, new_orders)
+        actual_missing_orders, actual_new_orders = OrderEvaluator.identify_order_changes(original_orders, new_orders)
 
         # Then
         self.assertTrue(sorted(actual_missing_orders) == sorted(expected_missing_orders))
