@@ -2,14 +2,12 @@ import logging
 import os
 import sys
 import time
-from dataclasses import dataclass
-from enum import Enum
-from typing import List, Optional
+from typing import List
 
 from binance.client import Client
 
 from messenger import TelegramMessenger, Message
-from order_wrappers import DetailedOrder, Order
+from order_wrappers import DetailedOrder, Order, OrderManager
 
 
 class BinanceOrderMonitor:
@@ -34,31 +32,32 @@ class BinanceOrderMonitor:
     def get_filled_order(self, symbol: str) -> List[DetailedOrder]:
         return [DetailedOrder(**order) for order in (self.client.get_all_orders(symbol=symbol))]
 
-    def get_last_order(self, symbol: str) -> DetailedOrder:
-        order = [DetailedOrder(**order) for order in (self.client.get_all_orders(symbol=symbol, limit=1))]
-        return order[0]
+    def is_order_filled(self, order: Order) -> bool:
+        return self.get_order(order).is_cancelled
 
-    def is_last_order_filled(self, symbol: str) -> bool:
-        return self.get_last_order(symbol).is_cancelled
-
-    def get_order_by_id(self, id: int):
-        return self.client.get_all_orders(orderId=id)
+    def get_order(self, order: Order):
+        return self.client.get_all_orders(symbol=order.symbol, orderId=order.orderId)
 
     def start_monitor(self):
         # Starts monitoring for order changes events
         while True:
             try:
-                orders = self.get_open_orders()
+                original_orders = self.get_open_orders()
+                logging.info(f'Original Orders: {original_orders}')
                 time.sleep(self._sleep_interval)
-                new_order = self.get_open_orders()
 
-                missing_orders, new_orders = set(order_ids) - set(new_order_ids)
+                updated_orders = self.get_open_orders()
+                logging.info(f'Updated Orders: {updated_orders}')
+
+                orders_added, orders_removed = OrderManager.identify_order_changes(original_orders=original_orders,
+                                                                                   new_orders=updated_orders)
 
                 # Check if order is cancelled or filled
-                for order in missing_orders:
-                    if self.is_last_order_filled(order_id):
-                        # TODO build better message
-                        self._messenger.send_message(message=Message(f'Order {symbol} has been filled'))
+                for order in orders_removed:
+                    if self.is_order_filled(order):
+                        logging.info(f'Order {order} has been filled')
+                        self._messenger.send_message(
+                            message=Message(f'Order #{order.orderId}, {order.symbol} has been filled'))
 
             except KeyboardInterrupt:
                 logging.error(f"Interrupted: {sys.exc_info()[0]}")
@@ -71,10 +70,3 @@ class BinanceOrderMonitor:
                 if hasattr(e, 'message'):
                     logging.error(f"Fatal Error: {e.message}")
                 logging.error(f"Fatal Error: {sys.exc_info()[0]}")
-
-
-if __name__ == '__main__':
-    client = BinanceOrderMonitor()
-    # s = client.is_last_order_filled(symbol='REEFUSDT')
-    s = client.get_order_by_id(34154801)
-    print(s)

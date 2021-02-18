@@ -21,6 +21,9 @@ class Order:
     def __lt__(self, other):
         return self.orderId < other.orderId
 
+    def __repr__(self):
+        return f'({self.symbol},{self.orderId})'
+
     def __eq__(self, other):
         if not isinstance(other, Order):
             # don't attempt to compare against unrelated types
