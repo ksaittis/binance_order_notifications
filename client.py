@@ -3,7 +3,7 @@ import os
 import sys
 import time
 
-from messenger import TelegramMessenger, Message
+from messenger import TelegramMessenger, Message, MessageBuilder
 from order_wrappers import OrderEvaluator, OrderManager
 
 
@@ -24,17 +24,22 @@ class BinanceOrderMonitor:
                 time.sleep(self._sleep_interval)
 
                 updated_orders = self._order_manager.get_open_orders()
+                #  Next line just for testing
+                # updated_orders.pop(0)
+
                 logging.info(f'Updated Orders: {updated_orders}')
 
-                orders_added, orders_removed = OrderEvaluator.identify_order_changes(original_orders=original_orders,
+                orders_removed, orders_added = OrderEvaluator.identify_order_changes(original_orders=original_orders,
                                                                                      new_orders=updated_orders)
 
                 # Check if order is cancelled or filled
                 for order in orders_removed:
-                    if self._order_manager.is_order_filled(order):
-                        logging.info(f'Order {order} has been filled')
-                        self._messenger.send_message(
-                            message=Message(f'Order #{order.orderId}, {order.symbol} has been filled'))
+                    detailed_order = self._order_manager.get_order(order)
+                    # if detailed_order.is_new:
+                    if detailed_order.is_filled:
+                        logging.info(
+                            f'Order {detailed_order.get_symbol()}, changed status to {detailed_order.get_status()}')
+                        self._messenger.send_message(message=MessageBuilder.build_msg(detailed_order))
 
             except KeyboardInterrupt:
                 logging.error(f"Interrupted: {sys.exc_info()[0]}")

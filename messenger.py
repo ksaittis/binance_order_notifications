@@ -4,11 +4,21 @@ from dataclasses import dataclass
 import requests
 import logging
 
+from order_wrappers import DetailedOrder
+
 
 @dataclass
 class Message:
     text: str
-    chat_id: str = None
+
+
+class MessageBuilder:
+    @staticmethod
+    def build_msg(detailed_order: DetailedOrder) -> Message:
+        return Message(
+            text=f'{detailed_order.type.capitalize()} {detailed_order.side} order {detailed_order.symbol} '
+                 f'has been {detailed_order.get_status()}, price {detailed_order.get_price()}, '
+                 f'qty {detailed_order.origQty} for a total {detailed_order.total}')
 
 
 class TelegramMessenger:
@@ -19,6 +29,7 @@ class TelegramMessenger:
 
     def __init__(self):
         self.bot_token = os.getenv('ORDER_NOTIFICATIONS_BOT_TOKEN', '1662096681:AAHrrqdEHsQXx3IerCxNWHdhkF4Lh6jXfb8')
+        self.chat_id = os.getenv('CHAT_ID', '1573650489')
 
     def send_message(self, message: Message):
         telegram_send_message_endpoint = self.build_message_endpoint(message)
@@ -30,6 +41,11 @@ class TelegramMessenger:
 
     def build_message_endpoint(self, message: Message):
         return f'https://api.telegram.org/bot{self.bot_token}/sendMessage?' \
-               f'chat_id={message.chat_id}' \
-               f'&text={message.text}' \
-               f'&disable_web_page_preview=true'
+               f'chat_id={self.chat_id}' \
+               f'&parse_mode=Markdown' \
+               f'&text={message.text}'
+
+
+if __name__ == '__main__':
+    m = TelegramMessenger()
+    m.send_message(Message('test teststtststsssssssssssssssssssssssss'))

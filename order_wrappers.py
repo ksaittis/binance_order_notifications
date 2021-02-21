@@ -8,7 +8,7 @@ from binance.client import Client
 
 class OrderStatus(Enum):
     ACTIVE = 'active'
-    FILED = 'filled'
+    FILLED = 'filled'
     CANCELED = 'canceled'
     NEW = 'new'
 
@@ -25,7 +25,7 @@ class Order:
         return self.orderId < other.orderId
 
     def __repr__(self):
-        return f'({self.symbol},{self.orderId})'
+        return f'Order({self.symbol}, {self.orderId})'
 
     def __eq__(self, other):
         if not isinstance(other, Order):
@@ -70,6 +70,13 @@ class DetailedOrder:
             return self.orderId
         return -1
 
+    @property
+    def total(self) -> float:
+        return self.get_price() * float(self.origQty)
+
+    def get_price(self) -> float:
+        return float(self.price)
+
     def get_status(self) -> Optional[str]:
         if 'status' in self.__dict__:
             return self.status.lower()
@@ -77,7 +84,7 @@ class DetailedOrder:
 
     @property
     def is_filled(self) -> bool:
-        return self.get_status() == OrderStatus.FILED.value
+        return self.get_status() == OrderStatus.FILLED.value
 
     @property
     def is_active(self) -> bool:
@@ -114,5 +121,6 @@ class OrderManager:
     def is_order_filled(self, order: Order) -> bool:
         return self.get_order(order).is_cancelled
 
-    def get_order(self, order: Order):
-        return self.client.get_all_orders(symbol=order.symbol, orderId=order.orderId)
+    def get_order(self, order: Order) -> DetailedOrder:
+        order = self.client.get_all_orders(symbol=order.symbol, orderId=order.orderId)[0]
+        return DetailedOrder(**order)
