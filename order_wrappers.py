@@ -41,6 +41,10 @@ class OrderEvaluator:
         return list(set(original_orders) - set(new_orders))
 
     @staticmethod
+    def have_orders_changed(original_orders: List[Order], new_orders: List[Order]) -> bool:
+        return bool(list(set(original_orders) - set(new_orders)))
+
+    @staticmethod
     def get_new_orders(original_orders: List[Order], new_orders: List[Order]) -> List[Order]:
         return list(set(new_orders) - set(original_orders))
 
@@ -102,8 +106,8 @@ class DetailedOrder:
 class OrderManager:
     def __init__(self):
         self.client = Client(
-            api_key=os.getenv('API_KEY', 'J7ZuTaZxOhbpMQueXPvS4Q2bO5IKHxlXKsmtAq3wZ63VnGF8kKZGzgt3QlQHhMtI'),
-            api_secret=os.getenv('SECRET_KEY', 'lGlIjkbCCEua91jNoN4UQvE8i5WSG5ZoV8h0KCzTHulq9vekE5uq9wFI4XrVD4ee')
+            api_key=os.getenv('API_KEY', ''),
+            api_secret=os.getenv('SECRET_KEY', '')
         )
 
     def get_detailed_open_orders(self) -> List[DetailedOrder]:

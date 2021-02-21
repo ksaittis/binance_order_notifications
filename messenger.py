@@ -17,7 +17,7 @@ class MessageBuilder:
     def build_msg(detailed_order: DetailedOrder) -> Message:
         return Message(
             text=f'{detailed_order.type.capitalize()} {detailed_order.side} order {detailed_order.symbol} '
-                 f'has been {detailed_order.get_status()}, price {detailed_order.get_price()}, '
+                 f'status {detailed_order.get_status()}, price {detailed_order.get_price()}, '
                  f'qty {detailed_order.origQty} for a total {detailed_order.total}')
 
 

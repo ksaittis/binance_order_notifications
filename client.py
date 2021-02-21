@@ -3,7 +3,7 @@ import os
 import sys
 import time
 
-from messenger import TelegramMessenger, Message, MessageBuilder
+from messenger import TelegramMessenger, MessageBuilder
 from order_wrappers import OrderEvaluator, OrderManager
 
 
@@ -16,30 +16,48 @@ class BinanceOrderMonitor:
 
     def start_monitor(self):
         # Starts monitoring for order changes events
+        original_orders = self._order_manager.get_open_orders()
         while True:
             try:
-                original_orders = self._order_manager.get_open_orders()
-                logging.info(f'Original Orders: {original_orders}')
-
+                logging.info(f'Original Orders Identified: {original_orders}')
                 time.sleep(self._sleep_interval)
 
                 updated_orders = self._order_manager.get_open_orders()
-                #  Next line just for testing
-                # updated_orders.pop(0)
 
-                logging.info(f'Updated Orders: {updated_orders}')
+                if OrderEvaluator.have_orders_changed(original_orders, updated_orders):
+                    logging.info('Identified order changes')
 
-                orders_removed, orders_added = OrderEvaluator.identify_order_changes(original_orders=original_orders,
-                                                                                     new_orders=updated_orders)
+                    orders_removed, orders_added = OrderEvaluator.identify_order_changes(
+                        original_orders=original_orders,
+                        new_orders=updated_orders)
 
-                # Check if order is cancelled or filled
-                for order in orders_removed:
-                    detailed_order = self._order_manager.get_order(order)
-                    # if detailed_order.is_new:
-                    if detailed_order.is_filled:
-                        logging.info(
-                            f'Order {detailed_order.get_symbol()}, changed status to {detailed_order.get_status()}')
-                        self._messenger.send_message(message=MessageBuilder.build_msg(detailed_order))
+                    # Update original orders
+                    original_orders = updated_orders
+
+                    logging.info(f'Missing orders {orders_removed}')
+                    logging.info(f'New orders {orders_added}')
+
+                    # Missing Orders, can be either filled or cancelled
+                    for order in orders_removed:
+                        detailed_order = self._order_manager.get_order(order)
+
+                        if detailed_order.is_filled:
+                            logging.info(
+                                f'Order {detailed_order.get_symbol()}, changed status to {detailed_order.get_status()}')
+                            self._messenger.send_message(message=MessageBuilder.build_msg(detailed_order))
+
+                        elif detailed_order.is_cancelled:
+                            logging.info(
+                                f'Order {detailed_order.get_symbol()}, changed status to {detailed_order.get_status()}')
+                            self._messenger.send_message(message=MessageBuilder.build_msg(detailed_order))
+
+                    # New Orders
+                    for order in orders_added:
+                        detailed_order = self._order_manager.get_order(order)
+                        if detailed_order.is_new:
+                            logging.info(
+                                f'Order {detailed_order.get_symbol()}, changed status to {detailed_order.get_status()}')
+                            self._messenger.send_message(message=MessageBuilder.build_msg(detailed_order))
 
             except KeyboardInterrupt:
                 logging.error(f"Interrupted: {sys.exc_info()[0]}")

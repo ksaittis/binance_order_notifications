@@ -21,7 +21,7 @@ spec:
         name: crypto-monitor
         envFrom:
         - configMapRef:
-            name: order_notifications_config
+            name: order-notifications-config
         resources:
           requests:
             cpu: "50m"

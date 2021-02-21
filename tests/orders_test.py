@@ -88,6 +88,17 @@ class TestOrders(unittest.TestCase):
         # Then
         self.assertTrue(sorted(actual_orders_added) == sorted([expected_new_order2, expected_new_order]))
 
+    def test_identify_no_changes_in_orders(self):
+        # Given
+        original_orders: List[Order] = [Order(symbol="BTCGBP", orderId=1), Order(symbol="1INCHUSDT", orderId=2)]
+        new_orders: List[Order] = [Order(symbol="BTCGBP", orderId=1), Order(symbol="1INCHUSDT", orderId=2)]
+
+        # When
+        have_orders_changed = OrderEvaluator.have_orders_changed(original_orders, new_orders)
+
+        # Then
+        self.assertFalse(have_orders_changed)
+
     def identify_missing_and_new_orders(self):
         # Given
         expected_missing_orders = [Order(symbol="BTCGBP", orderId=1), Order(symbol="1INCHUSDT", orderId=2)]
