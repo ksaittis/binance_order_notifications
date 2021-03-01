@@ -6,23 +6,26 @@ import time
 from messenger import TelegramMessenger, MessageBuilder
 from order_wrappers import OrderEvaluator, OrderManager
 
+logging.basicConfig(level=logging.INFO, format='%(asctime)s %(levelname)s: %(message)s', datefmt='%Y-%m-%d %H:%M:%S')
+
 
 class BinanceOrderMonitor:
 
     def __init__(self):
         self._order_manager = OrderManager()
         self._messenger = TelegramMessenger()
-        self._sleep_interval = int(os.getenv('SLEEP_INTERVAL', 2))
+        self._sleep_interval = int(os.getenv('SLEEP_INTERVAL', 60))
 
     def start_monitor(self):
+        logging.info(f'Order monitor started')
         # Starts monitoring for order changes events
         original_orders = self._order_manager.get_open_orders()
         while True:
             try:
-                logging.info(f'Original Orders Identified: {original_orders}')
                 time.sleep(self._sleep_interval)
 
                 updated_orders = self._order_manager.get_open_orders()
+                logging.info(f'Orders found: {original_orders}')
 
                 if OrderEvaluator.have_orders_changed(original_orders, updated_orders):
                     logging.info('Identified order changes')
@@ -41,22 +44,16 @@ class BinanceOrderMonitor:
                     for order in orders_removed:
                         detailed_order = self._order_manager.get_order(order)
 
-                        if detailed_order.is_filled:
-                            logging.info(
-                                f'Order {detailed_order.get_symbol()}, changed status to {detailed_order.get_status()}')
-                            self._messenger.send_message(message=MessageBuilder.build_msg(detailed_order))
-
-                        elif detailed_order.is_cancelled:
-                            logging.info(
-                                f'Order {detailed_order.get_symbol()}, changed status to {detailed_order.get_status()}')
-                            self._messenger.send_message(message=MessageBuilder.build_msg(detailed_order))
+                        logging.info(
+                            f'Order {detailed_order.get_symbol()}, new status: {detailed_order.get_status().upper()}')
+                        self._messenger.send_message(message=MessageBuilder.build_msg(detailed_order))
 
                     # New Orders
                     for order in orders_added:
                         detailed_order = self._order_manager.get_order(order)
                         if detailed_order.is_new:
                             logging.info(
-                                f'Order {detailed_order.get_symbol()}, changed status to {detailed_order.get_status()}')
+                                f'Order {detailed_order.get_symbol()}, changed status to {detailed_order.get_status().upper()}')
                             self._messenger.send_message(message=MessageBuilder.build_msg(detailed_order))
 
             except KeyboardInterrupt:

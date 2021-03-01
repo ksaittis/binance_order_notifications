@@ -1,10 +1,22 @@
 import os
 from dataclasses import dataclass
+from enum import Enum
 
 import requests
 import logging
 
 from order_wrappers import DetailedOrder
+
+
+class Emoji(Enum):
+    GREEN_SQUARE = '\U0001F7E9'
+    RED_SQUARE = '\U0001F7E5'
+    STAR = '\U00002B50'
+    STOP_SIGN = '\U0001F6D1'
+    NEW = '\U0001F195'
+    RECYCLE = '\U0000267B'
+    MONEY = '\U0001F4B0'
+    CONFUSED = '\U0001F615'
 
 
 @dataclass
@@ -14,22 +26,41 @@ class Message:
 
 class MessageBuilder:
     @staticmethod
+    def _get_msg_prefix_emoji(order_side: str) -> Emoji:
+        if order_side.lower() == 'buy':
+            return Emoji.RED_SQUARE
+        elif order_side.lower() == 'sell':
+            return Emoji.GREEN_SQUARE
+        elif order_side.lower() == 'cancel':
+            return Emoji.RECYCLE
+        return Emoji.STOP_SIGN
+
+    @staticmethod
+    def _get_symbol_formatted(symbol: str) -> str:
+        if len(symbol) == 8:
+            return f'{symbol[:4]}/{symbol[4:]}'
+        elif len(symbol) == 6:
+            return f'{symbol[:3]}/{symbol[3:]}'
+        elif len(symbol) == 7:
+            return f'{symbol[:3]}/{symbol[4:]}'
+        return symbol
+
+    @staticmethod
     def build_msg(detailed_order: DetailedOrder) -> Message:
+        emoji_prefix: Emoji = MessageBuilder._get_msg_prefix_emoji(detailed_order.side)
+        formatted_symbol = MessageBuilder._get_symbol_formatted(detailed_order.get_symbol())
+
         return Message(
-            text=f'{detailed_order.type.capitalize()} {detailed_order.side} order {detailed_order.symbol} '
-                 f'status {detailed_order.get_status()}, price {detailed_order.get_price()}, '
-                 f'qty {detailed_order.origQty} for a total {detailed_order.total}')
+            text=f'{emoji_prefix.value} {formatted_symbol} {detailed_order.side.upper()} {detailed_order.get_status()}, '
+                 f'{detailed_order.get_price()}*{detailed_order.origQty}={detailed_order.total} {Emoji.MONEY.value}')
 
 
 class TelegramMessenger:
     BASE_ENDPOINT = 'https://api.telegram.org/bot'
-    CHANNEL_ID = os.getenv('CHANNEL_ID', '1573650489')
-    BOT_CHAT_ID = '1573650489'
-    USER_CHAT_ID = '-493956374'
 
     def __init__(self):
-        self.bot_token = os.getenv('ORDER_NOTIFICATIONS_BOT_TOKEN', '1662096681:AAHrrqdEHsQXx3IerCxNWHdhkF4Lh6jXfb8')
-        self.chat_id = os.getenv('CHAT_ID', '1573650489')
+        self.bot_token = os.getenv('ORDER_NOTIFICATIONS_BOT_TOKEN', '1649540746:AAHvVA3D_s8mzXDj2vbCmaTCcYWsdC1gGxo')
+        self.chat_id = os.getenv('CHAT_ID', '-1001478516526')
 
     def send_message(self, message: Message):
         telegram_send_message_endpoint = self.build_message_endpoint(message)
@@ -48,4 +79,4 @@ class TelegramMessenger:
 
 if __name__ == '__main__':
     m = TelegramMessenger()
-    m.send_message(Message('test teststtststsssssssssssssssssssssssss'))
+    m.send_message(Message('test'))
